@@ -45,6 +45,10 @@
             z-index: 100;
             transition: opacity 0.5s;
         }
+
+        .checkmark-ready {
+            @apply flex items-center justify-center bg-emerald-500/20 text-emerald-400 w-10 h-10 rounded-full border border-emerald-500/30 shadow-lg shadow-emerald-500/10;
+        }
     </style>
 </head>
 <body class="text-slate-100 min-h-screen">
@@ -161,14 +165,13 @@
                             return statusUpper !== 'COMPLETED' && statusUpper !== 'SELESAI';
                         });
                         
-                        // Sembunyikan loader hanya pada pemuatan pertama
                         if (initialLoad) {
                             const loader = document.getElementById('loadingOverlay');
                             if (loader) {
                                 loader.style.opacity = '0';
                                 setTimeout(() => loader.style.display = 'none', 500);
                             }
-                            renderPage(); // Render langsung hanya pada load pertama
+                            renderPage();
                             initialLoad = false;
                         }
                         
@@ -207,7 +210,6 @@
                 return;
             }
 
-            // Validasi currentPage agar tidak out of bounds jika data berkurang
             if (currentPage >= totalPages) currentPage = 0;
 
             const pageData = activeOrders.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
@@ -224,9 +226,32 @@
                 const priorityClass = order.priority === 'High' ? 'priority-high' : 
                                      order.priority === 'Medium' ? 'priority-medium' : 'priority-low';
 
-                const allEq = order.equipment ? order.equipment.split(',') : [];
-                const checkedEq = order.checkedEquipment ? order.checkedEquipment.split(',') : [];
-                const progress = allEq.length > 0 ? Math.round((checkedEq.length / allEq.length) * 100) : 0;
+                const allEq = order.equipment ? order.equipment.split(',').filter(e => e.trim() !== "") : [];
+                const checkedEq = order.checkedEquipment ? order.checkedEquipment.split(',').filter(e => e.trim() !== "") : [];
+                
+                const progress = allEq.length > 0 ? Math.round((checkedEq.length / allEq.length) * 100) : 100;
+
+                // Tampilan Kolom Alat: Ceklis jika 100%, Bar jika < 100%
+                let equipmentDisplay = '';
+                if (progress === 100) {
+                    equipmentDisplay = `
+                        <div class="flex justify-center items-center h-full">
+                            <div class="checkmark-ready">
+                                <i class="fas fa-check text-xl"></i>
+                            </div>
+                        </div>`;
+                } else {
+                    equipmentDisplay = `
+                        <div class="w-full max-w-[150px]">
+                            <div class="flex justify-between text-[9px] font-black text-slate-500 mb-2">
+                                <span>READY: ${checkedEq.length}/${allEq.length}</span>
+                                <span>${progress}%</span>
+                            </div>
+                            <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-700/50">
+                                <div class="bg-blue-600 h-full transition-all duration-1000" style="width: ${progress}%"></div>
+                            </div>
+                        </div>`;
+                }
 
                 tbody.insertAdjacentHTML('beforeend', `
                     <tr class="bg-slate-800/10 page-transition ${priorityClass}">
@@ -254,15 +279,7 @@
                             </div>
                         </td>
                         <td class="px-8 py-6">
-                            <div class="w-full max-w-[150px]">
-                                <div class="flex justify-between text-[9px] font-black text-slate-500 mb-2">
-                                    <span>READY: ${checkedEq.length}/${allEq.length}</span>
-                                    <span>${progress}%</span>
-                                </div>
-                                <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-700/50">
-                                    <div class="bg-blue-600 h-full transition-all duration-1000" style="width: ${progress}%"></div>
-                                </div>
-                            </div>
+                            ${equipmentDisplay}
                         </td>
                         <td class="px-8 py-6 text-right">
                             <span class="status-badge ${statusClasses[order.status] || 'bg-slate-700 text-slate-400 border border-slate-600/30'}">${order.status}</span>
@@ -287,11 +304,7 @@
 
         window.onload = () => {
             fetchData();
-            
-            // Interval Sinkronisasi (Hanya update data, tidak ganggu tampilan halaman saat ini)
             setInterval(fetchData, 60000); 
-            
-            // Interval Rotasi Halaman (Satu-satunya sumber perpindahan halaman)
             setInterval(() => { 
                 const totalPages = Math.ceil(activeOrders.length / itemsPerPage);
                 if (totalPages > 1) {
@@ -302,7 +315,6 @@
                     renderPage();
                 }
             }, 10000); 
-
             setInterval(updateClock, 1000);
             updateClock();
         };
