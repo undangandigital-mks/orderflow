@@ -52,7 +52,7 @@
     <div id="loadingOverlay">
         <div class="text-center">
             <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-            <p class="text-blue-400 font-bold animate-pulse uppercase tracking-widest">Sinkronisasi Data GitHub...</p>
+            <p class="text-blue-400 font-bold animate-pulse uppercase tracking-widest">Sinkronisasi Data Produksi...</p>
         </div>
     </div>
 
@@ -62,11 +62,11 @@
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-4">
                     <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-500/20">
-                        <i class="fas fa-network-wired text-white text-xl"></i>
+                        <i class="fas fa-microchip text-white text-xl"></i>
                     </div>
                     <div>
                         <h1 class="text-xl font-black tracking-tight text-white">LIVE PRODUCTION MONITOR</h1>
-                        <p class="text-[10px] text-blue-400 font-bold tracking-[0.3em] uppercase">Vi Printing Cloud System</p>
+                        <p class="text-[10px] text-blue-400 font-bold tracking-[0.3em] uppercase">Vi Printing • Antrean Aktif (Non-Selesai)</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-8">
@@ -84,36 +84,36 @@
     </nav>
 
     <main class="max-w-[98%] mx-auto px-6 py-6">
-        <!-- Stats -->
+        <!-- Dashboard Stats -->
         <div class="grid grid-cols-4 gap-6 mb-8">
             <div class="bg-slate-800/40 border border-slate-700/50 p-5 rounded-3xl backdrop-blur-md text-center">
                 <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Total Order</p>
                 <h3 class="text-3xl font-black text-white" id="stat-total">0</h3>
             </div>
             <div class="bg-blue-600/10 border border-blue-500/20 p-5 rounded-3xl backdrop-blur-md text-center">
-                <p class="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1">Proses</p>
+                <p class="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1">Antrean Aktif</p>
                 <h3 class="text-3xl font-black text-blue-400" id="stat-pending">0</h3>
             </div>
             <div class="bg-rose-600/10 border border-rose-500/20 p-5 rounded-3xl backdrop-blur-md text-center">
-                <p class="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-1">Prioritas</p>
+                <p class="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-1">Prioritas (Aktif)</p>
                 <h3 class="text-3xl font-black text-rose-400" id="stat-priority">0</h3>
             </div>
             <div class="bg-emerald-600/10 border border-emerald-500/20 p-5 rounded-3xl backdrop-blur-md text-center">
-                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1">Selesai</p>
+                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1">Total Selesai</p>
                 <h3 class="text-3xl font-black text-emerald-400" id="stat-completed">0</h3>
             </div>
         </div>
 
-        <!-- Tabel -->
+        <!-- Tabel Monitoring -->
         <div class="bg-slate-800/20 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-700/30">
             <table class="w-full text-left border-collapse">
                 <thead>
                     <tr class="bg-slate-900/90 border-b border-slate-700/50">
                         <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[20%]">Pelanggan</th>
                         <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[25%]">Pekerjaan</th>
-                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[25%] text-center">Monitoring Deadline</th>
-                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%]">Status Alat</th>
-                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%] text-right">Progress</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[25%] text-center">Estimasi Deadline</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%]">Kesiapan Alat</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%] text-right">Status Kerja</th>
                     </tr>
                 </thead>
             </table>
@@ -126,46 +126,53 @@
     </main>
 
     <script>
-        const SPREADSHEET_ID = '1bMLOB2uCREatO_2uOonwqf2YDEunJQM_UbfqmL8vVgY';
         const CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vSa9hLZ0D_dxIG6__JPKMElhpAHD2opjifL37jOJTPj7pQjUDX2Nseg4TDlckSy89ahJvHbiBA7FV5k/pub?gid=0&single=true&output=csv`;
         
-        let allOrders = [];
+        let allOrdersRaw = []; 
+        let activeOrders = []; 
         let currentPage = 0;
         const itemsPerPage = 6;
-        let pageFlipInterval;
 
         async function fetchData() {
             try {
-                // Gunakan cache busting agar data selalu fresh dari GitHub/Google
-                const response = await fetch(`${CSV_URL}&cachebuster=${new Date().getTime()}`);
+                const response = await fetch(`${CSV_URL}&t=${new Date().getTime()}`);
                 const csvText = await response.text();
                 
                 Papa.parse(csvText, {
                     header: true,
                     skipEmptyLines: true,
                     complete: function(results) {
-                        // Map CSV Headers ke Object (Pastikan Header di Sheet sama dengan nama ini)
-                        // Jika Header di sheet berbeda, ganti d['Nama Header Anda']
-                        allOrders = results.data.map(d => ({
-                            id: d['ID'] || d['id'] || '-',
-                            customer: d['Pelanggan'] || d['customer'] || 'Unknown',
-                            jobName: d['Pekerjaan'] || d['jobName'] || '-',
-                            quantity: d['QTY'] || d['quantity'] || '0',
-                            priority: d['Prioritas'] || d['priority'] || 'Low',
-                            status: d['Status'] || d['status'] || 'Pending',
-                            finalDeadline: d['Target Final'] || d['finalDeadline'] || '',
-                            statusDeadline: d['Target Tahap'] || d['statusDeadline'] || '',
-                            equipment: d['Alat'] || d['equipment'] || '',
-                            checkedEquipment: d['Ready'] || d['checkedEquipment'] || ''
+                        allOrdersRaw = results.data.map(d => ({
+                            id: d['ID'] || '-',
+                            customer: d['Customer'] || 'Unknown',
+                            jobName: d['Job Name'] || '-',
+                            quantity: d['Qty'] || '0',
+                            priority: d['Priority'] || 'Low',
+                            status: d['Status'] || 'Pending',
+                            finalDeadline: d['Final Deadline'] || '',
+                            statusDeadline: d['Status Deadline'] || '',
+                            equipment: d['Equipment'] || '',
+                            checkedEquipment: d['Checked Equipment'] || ''
                         }));
+
+                        // LOGIKA FILTER: Hanya tampilkan yang BUKAN 'Completed' atau 'Selesai'
+                        activeOrders = allOrdersRaw.filter(order => {
+                            const statusUpper = order.status.toUpperCase();
+                            return statusUpper !== 'COMPLETED' && statusUpper !== 'SELESAI';
+                        });
                         
-                        document.getElementById('loadingOverlay').style.opacity = '0';
-                        setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
+                        const loader = document.getElementById('loadingOverlay');
+                        if (loader) {
+                            loader.style.opacity = '0';
+                            setTimeout(() => loader.style.display = 'none', 500);
+                        }
+                        
                         renderPage();
+                        updateStats();
                     }
                 });
             } catch (error) {
-                console.error("Fetch Error:", error);
+                console.error("Gagal sinkronisasi database:", error);
             }
         }
 
@@ -188,21 +195,24 @@
 
         function renderPage() {
             const tbody = document.getElementById('orderTableBody');
-            if (!allOrders.length) return;
+            if (!activeOrders.length) {
+                tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-24 text-center text-slate-500 font-bold uppercase tracking-[0.3em] opacity-50">Semua Target Produksi Telah Tercapai</td></tr>`;
+                document.getElementById('pageNum').innerText = "0 / 0";
+                return;
+            }
 
-            const totalPages = Math.ceil(allOrders.length / itemsPerPage);
+            const totalPages = Math.ceil(activeOrders.length / itemsPerPage);
             if (currentPage >= totalPages) currentPage = 0;
 
-            const pageData = allOrders.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
+            const pageData = activeOrders.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
             document.getElementById('pageNum').innerText = `${currentPage + 1} / ${totalPages}`;
 
             tbody.innerHTML = '';
             pageData.forEach(order => {
                 const statusClasses = {
-                    'Pending': 'bg-slate-700/40 text-slate-400 border border-slate-600/50',
+                    'Pending': 'bg-slate-700/50 text-slate-400 border border-slate-600/30',
                     'Process': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-                    'Finishing': 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
-                    'Completed': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                    'Finishing': 'bg-purple-500/20 text-purple-400 border border-purple-500/30'
                 };
 
                 const priorityClass = order.priority === 'High' ? 'priority-high' : 
@@ -222,17 +232,17 @@
                         </td>
                         <td class="px-8 py-6">
                             <span class="text-base font-semibold text-slate-200">${order.jobName}</span>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">QTY: ${order.quantity}</p>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Estimasi Qty: ${order.quantity}</p>
                         </td>
                         <td class="px-8 py-6 text-center">
                             <div class="flex justify-center gap-6">
                                 <div>
-                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Tahap</p>
+                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Target Tahap</p>
                                     <span class="text-sm font-bold ${getRelativeTime(order.statusDeadline).color}">${getRelativeTime(order.statusDeadline).text}</span>
                                 </div>
                                 <div class="w-[1px] h-8 bg-slate-700/50"></div>
                                 <div>
-                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p>
+                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Deadline Final</p>
                                     <span class="text-sm font-bold ${getRelativeTime(order.finalDeadline).color}">${getRelativeTime(order.finalDeadline).text}</span>
                                 </div>
                             </div>
@@ -249,19 +259,18 @@
                             </div>
                         </td>
                         <td class="px-8 py-6 text-right">
-                            <span class="status-badge ${statusClasses[order.status] || 'bg-slate-700'}">${order.status}</span>
+                            <span class="status-badge ${statusClasses[order.status] || 'bg-slate-700 text-slate-400 border border-slate-600/30'}">${order.status}</span>
                         </td>
                     </tr>
                 `);
             });
-            updateStats();
         }
 
         function updateStats() {
-            document.getElementById('stat-total').innerText = allOrders.length;
-            document.getElementById('stat-pending').innerText = allOrders.filter(o => o.status === 'Process').length;
-            document.getElementById('stat-priority').innerText = allOrders.filter(o => o.priority === 'High').length;
-            document.getElementById('stat-completed').innerText = allOrders.filter(o => o.status === 'Completed').length;
+            document.getElementById('stat-total').innerText = allOrdersRaw.length;
+            document.getElementById('stat-pending').innerText = activeOrders.length;
+            document.getElementById('stat-priority').innerText = activeOrders.filter(o => o.priority === 'High').length;
+            document.getElementById('stat-completed').innerText = allOrdersRaw.length - activeOrders.length;
         }
 
         function updateClock() {
@@ -272,8 +281,15 @@
 
         window.onload = () => {
             fetchData();
-            setInterval(fetchData, 60000); // Sinkronisasi Sheet tiap 1 menit
-            setInterval(() => { currentPage++; renderPage(); }, 10000); // Ganti halaman tiap 10 detik
+            // Sinkronisasi ulang data setiap 60 detik
+            setInterval(fetchData, 60000); 
+            // Rotasi halaman otomatis setiap 10 detik jika data melebihi kapasitas layar
+            setInterval(() => { 
+                if (activeOrders.length > itemsPerPage) {
+                    currentPage++; 
+                    renderPage(); 
+                }
+            }, 10000); 
             setInterval(updateClock, 1000);
             updateClock();
         };
