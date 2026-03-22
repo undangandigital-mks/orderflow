@@ -1,0 +1,263 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Monitoring Order - Vi Printing</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
+        body { 
+            font-family: 'Plus Jakarta Sans', sans-serif; 
+            overflow: hidden; 
+            background-color: #0f172a;
+        }
+        .status-badge {
+            @apply px-4 py-1.5 rounded-full text-xs font-extrabold uppercase tracking-widest;
+        }
+        .priority-high { border-left: 6px solid #ef4444; }
+        .priority-medium { border-left: 6px solid #f59e0b; }
+        .priority-low { border-left: 6px solid #3b82f6; }
+        
+        .page-transition {
+            animation: slideIn 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+
+        @keyframes slideIn {
+            from { opacity: 0; transform: translateX(20px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        #displayContainer {
+            height: calc(100vh - 220px);
+            overflow: hidden;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen">
+
+    <!-- Navbar Monitoring -->
+    <nav class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 shadow-2xl">
+        <div class="max-w-[98%] mx-auto px-6 py-4">
+            <div class="flex justify-between items-center">
+                <div class="flex items-center gap-4">
+                    <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-500/20">
+                        <i class="fas fa-desktop text-white text-xl"></i>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-black tracking-tight text-white">LIVE PRODUCTION MONITOR</h1>
+                        <p class="text-[10px] text-blue-400 font-bold tracking-[0.3em] uppercase">Vi Printing Digital System</p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-8">
+                    <div id="pageIndicator" class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700">
+                        <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Halaman</span>
+                        <p class="text-sm font-bold text-white text-center" id="pageNum">1 / 1</p>
+                    </div>
+                    <div class="text-right">
+                        <p id="liveTime" class="text-2xl font-black font-mono text-white tracking-wider">00:00:00</p>
+                        <p id="liveDate" class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">Memuat...</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <main class="max-w-[98%] mx-auto px-6 py-6">
+        
+        <!-- Summary Stats -->
+        <div class="grid grid-cols-4 gap-6 mb-8">
+            <div class="bg-slate-800/40 border border-slate-700/50 p-5 rounded-3xl backdrop-blur-md">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 text-center">Total Order</p>
+                <h3 class="text-3xl font-black text-white text-center" id="stat-total">0</h3>
+            </div>
+            <div class="bg-blue-600/10 border border-blue-500/20 p-5 rounded-3xl backdrop-blur-md">
+                <p class="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1 text-center">Proses</p>
+                <h3 class="text-3xl font-black text-blue-400 text-center" id="stat-pending">0</h3>
+            </div>
+            <div class="bg-rose-600/10 border border-rose-500/20 p-5 rounded-3xl backdrop-blur-md">
+                <p class="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-1 text-center">Prioritas</p>
+                <h3 class="text-3xl font-black text-rose-400 text-center" id="stat-priority">0</h3>
+            </div>
+            <div class="bg-emerald-600/10 border border-emerald-500/20 p-5 rounded-3xl backdrop-blur-md">
+                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1 text-center">Selesai</p>
+                <h3 class="text-3xl font-black text-emerald-400 text-center" id="stat-completed">0</h3>
+            </div>
+        </div>
+
+        <!-- Tabel Container -->
+        <div class="bg-slate-800/20 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-700/30">
+            <table class="w-full text-left border-collapse">
+                <thead>
+                    <tr class="bg-slate-900/90 border-b border-slate-700/50">
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[20%]">Pelanggan</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[25%]">Pekerjaan</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[25%] text-center">Monitoring Deadline</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%]">Status Alat</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%] text-right">Progress</th>
+                    </tr>
+                </thead>
+            </table>
+            
+            <div id="displayContainer">
+                <table class="w-full text-left border-collapse">
+                    <tbody class="divide-y divide-slate-700/30" id="orderTableBody">
+                        <!-- Data rows injected by JS -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Simulasi Data Real-time
+        let allOrders = [
+            { id: "V-001", customer: "Budi Santoso", jobName: "Banner Toko Sembako", quantity: "2 Pcs", priority: "High", status: "Process", finalDeadline: "2026-03-22", statusDeadline: "2026-03-21", equipment: "Banner,Mata Ayam", checkedEquipment: "Banner" },
+            { id: "V-002", customer: "Siska Amelia", jobName: "Stiker Vinyl Matte A3", quantity: "100 Pcs", priority: "Medium", status: "Pending", finalDeadline: "2026-03-23", statusDeadline: "2026-03-22", equipment: "Vinyl,Laminasi", checkedEquipment: "" },
+            { id: "V-003", customer: "Percetakan Jaya", jobName: "Kartu Nama Art Paper", quantity: "10 Box", priority: "Low", status: "Finishing", finalDeadline: "2026-03-25", statusDeadline: "2026-03-24", equipment: "Art Paper,Box", checkedEquipment: "Art Paper,Box" },
+            { id: "V-004", customer: "Resto Padang", jobName: "Brosur Lipat 3", quantity: "500 Lembar", priority: "High", status: "Process", finalDeadline: "2026-03-22", statusDeadline: "2026-03-22", equipment: "HVS 80g", checkedEquipment: "HVS 80g" },
+            { id: "V-005", customer: "PT Maju Terus", jobName: "X-Banner Launching", quantity: "1 Set", priority: "Medium", status: "Pending", finalDeadline: "2026-03-26", statusDeadline: "2026-03-24", equipment: "X-Stand,Banner", checkedEquipment: "Banner" },
+            { id: "V-006", customer: "Digital Media", jobName: "Neon Box 1m x 1m", quantity: "1 Unit", priority: "High", status: "Process", finalDeadline: "2026-03-30", statusDeadline: "2026-03-27", equipment: "Acrylic,LED,Frame", checkedEquipment: "Frame,LED" },
+            { id: "V-010", customer: "Sekolah Dasar 01", jobName: "Sertifikat Lulus", quantity: "50 Pcs", priority: "Medium", status: "Finishing", finalDeadline: "2026-03-28", statusDeadline: "2026-03-26", equipment: "Concorde 220g", checkedEquipment: "Concorde 220g" }
+        ];
+
+        let currentPage = 0;
+        const itemsPerPage = 6; 
+        let pageFlipInterval;
+
+        // Fungsi Logika Waktu Relatif
+        function getRelativeTime(dateStr) {
+            if (!dateStr) return { text: 'TBA', color: 'text-slate-500' };
+            
+            const target = new Date(dateStr);
+            target.setHours(0, 0, 0, 0);
+            
+            const now = new Date();
+            now.setHours(0, 0, 0, 0);
+            
+            const diffTime = target - now;
+            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays === 0) return { text: 'Hari Ini', color: 'text-amber-400 font-black animate-pulse' };
+            if (diffDays === 1) return { text: 'Besok', color: 'text-blue-400' };
+            if (diffDays > 1) return { text: `Sisa ${diffDays} Hari`, color: 'text-emerald-400' };
+            if (diffDays < 0) return { text: `Telat ${Math.abs(diffDays)} Hari`, color: 'text-rose-500 font-black' };
+            
+            return { text: dateStr, color: 'text-slate-300' };
+        }
+
+        function renderPage() {
+            const tbody = document.getElementById('orderTableBody');
+            const totalPages = Math.ceil(allOrders.length / itemsPerPage);
+            
+            if (currentPage >= totalPages) currentPage = 0;
+
+            const start = currentPage * itemsPerPage;
+            const end = start + itemsPerPage;
+            const pageData = allOrders.slice(start, end);
+
+            document.getElementById('pageNum').innerText = `${currentPage + 1} / ${totalPages}`;
+
+            tbody.innerHTML = '';
+            pageData.forEach((order) => {
+                const statusClasses = {
+                    'Pending': 'bg-slate-700/40 text-slate-400 border border-slate-600/50',
+                    'Process': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
+                    'Finishing': 'bg-purple-500/20 text-purple-400 border border-purple-500/30',
+                    'Completed': 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30'
+                };
+
+                const priorityClass = order.priority === 'High' ? 'priority-high' : 
+                                     order.priority === 'Medium' ? 'priority-medium' : 'priority-low';
+
+                const allEq = order.equipment ? order.equipment.split(',') : [];
+                const checkedEq = order.checkedEquipment ? order.checkedEquipment.split(',') : [];
+                const progress = allEq.length > 0 ? Math.round((checkedEq.length / allEq.length) * 100) : 0;
+
+                const targetTahap = getRelativeTime(order.statusDeadline);
+                const targetFinal = getRelativeTime(order.finalDeadline);
+
+                const row = `
+                    <tr class="bg-slate-800/10 page-transition ${priorityClass}">
+                        <td class="px-8 py-6">
+                            <div class="flex flex-col">
+                                <span class="text-[9px] font-mono text-slate-500 mb-1 tracking-widest">${order.id}</span>
+                                <span class="font-bold text-lg text-white tracking-tight">${order.customer}</span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6">
+                            <span class="text-base font-semibold text-slate-200">${order.jobName}</span>
+                            <div class="flex items-center gap-3 mt-1">
+                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
+                                    QTY: ${order.quantity}
+                                </span>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6">
+                            <div class="flex justify-center gap-6">
+                                <div class="text-center">
+                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1 tracking-widest">Target Tahap</p>
+                                    <span class="text-sm font-bold ${targetTahap.color}">${targetTahap.text}</span>
+                                </div>
+                                <div class="w-[1px] h-8 bg-slate-700/50"></div>
+                                <div class="text-center">
+                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1 tracking-widest">Target Final</p>
+                                    <span class="text-sm font-bold ${targetFinal.color}">${targetFinal.text}</span>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6">
+                            <div class="w-full max-w-[150px]">
+                                <div class="flex justify-between text-[9px] font-black text-slate-500 mb-2 tracking-tighter">
+                                    <span>READY: ${checkedEq.length}/${allEq.length}</span>
+                                    <span>${progress}%</span>
+                                </div>
+                                <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-700/50">
+                                    <div class="bg-gradient-to-r from-blue-600 to-indigo-500 h-full transition-all duration-1000" style="width: ${progress}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td class="px-8 py-6 text-right">
+                            <span class="status-badge ${statusClasses[order.status] || 'bg-slate-700'}">
+                                ${order.status}
+                            </span>
+                        </td>
+                    </tr>
+                `;
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
+
+            updateStats();
+        }
+
+        function startAutoFlip() {
+            clearInterval(pageFlipInterval);
+            pageFlipInterval = setInterval(() => {
+                currentPage++;
+                renderPage();
+            }, 10000); 
+        }
+
+        function updateStats() {
+            document.getElementById('stat-total').innerText = allOrders.length;
+            document.getElementById('stat-pending').innerText = allOrders.filter(o => o.status === 'Process').length;
+            document.getElementById('stat-priority').innerText = allOrders.filter(o => o.priority === 'High').length;
+            document.getElementById('stat-completed').innerText = allOrders.filter(o => o.status === 'Completed').length;
+        }
+
+        function updateClock() {
+            const now = new Date();
+            document.getElementById('liveTime').innerText = now.toLocaleTimeString('id-ID', { hour12: false });
+            document.getElementById('liveDate').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' });
+        }
+
+        window.onload = () => {
+            renderPage();
+            startAutoFlip();
+            setInterval(updateClock, 1000);
+            updateClock();
+        };
+    </script>
+</body>
+</html>
