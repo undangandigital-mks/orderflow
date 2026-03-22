@@ -132,6 +132,7 @@
         let activeOrders = []; 
         let currentPage = 0;
         const itemsPerPage = 6;
+        let initialLoad = true;
 
         async function fetchData() {
             try {
@@ -155,19 +156,22 @@
                             checkedEquipment: d['Checked Equipment'] || ''
                         }));
 
-                        // LOGIKA FILTER: Hanya tampilkan yang BUKAN 'Completed' atau 'Selesai'
                         activeOrders = allOrdersRaw.filter(order => {
                             const statusUpper = order.status.toUpperCase();
                             return statusUpper !== 'COMPLETED' && statusUpper !== 'SELESAI';
                         });
                         
-                        const loader = document.getElementById('loadingOverlay');
-                        if (loader) {
-                            loader.style.opacity = '0';
-                            setTimeout(() => loader.style.display = 'none', 500);
+                        // Sembunyikan loader hanya pada pemuatan pertama
+                        if (initialLoad) {
+                            const loader = document.getElementById('loadingOverlay');
+                            if (loader) {
+                                loader.style.opacity = '0';
+                                setTimeout(() => loader.style.display = 'none', 500);
+                            }
+                            renderPage(); // Render langsung hanya pada load pertama
+                            initialLoad = false;
                         }
                         
-                        renderPage();
                         updateStats();
                     }
                 });
@@ -195,13 +199,15 @@
 
         function renderPage() {
             const tbody = document.getElementById('orderTableBody');
+            const totalPages = Math.ceil(activeOrders.length / itemsPerPage);
+            
             if (!activeOrders.length) {
                 tbody.innerHTML = `<tr><td colspan="5" class="px-8 py-24 text-center text-slate-500 font-bold uppercase tracking-[0.3em] opacity-50">Semua Target Produksi Telah Tercapai</td></tr>`;
                 document.getElementById('pageNum').innerText = "0 / 0";
                 return;
             }
 
-            const totalPages = Math.ceil(activeOrders.length / itemsPerPage);
+            // Validasi currentPage agar tidak out of bounds jika data berkurang
             if (currentPage >= totalPages) currentPage = 0;
 
             const pageData = activeOrders.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
@@ -281,15 +287,22 @@
 
         window.onload = () => {
             fetchData();
-            // Sinkronisasi ulang data setiap 60 detik
+            
+            // Interval Sinkronisasi (Hanya update data, tidak ganggu tampilan halaman saat ini)
             setInterval(fetchData, 60000); 
-            // Rotasi halaman otomatis setiap 10 detik jika data melebihi kapasitas layar
+            
+            // Interval Rotasi Halaman (Satu-satunya sumber perpindahan halaman)
             setInterval(() => { 
-                if (activeOrders.length > itemsPerPage) {
-                    currentPage++; 
+                const totalPages = Math.ceil(activeOrders.length / itemsPerPage);
+                if (totalPages > 1) {
+                    currentPage = (currentPage + 1) % totalPages;
                     renderPage(); 
+                } else if (currentPage !== 0) {
+                    currentPage = 0;
+                    renderPage();
                 }
             }, 10000); 
+
             setInterval(updateClock, 1000);
             updateClock();
         };
