@@ -6,6 +6,7 @@
     <title>Monitoring Order - Vi Printing</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap');
         body { 
@@ -33,25 +34,43 @@
             height: calc(100vh - 220px);
             overflow: hidden;
         }
+
+        #loadingOverlay {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(15, 23, 42, 0.9);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            transition: opacity 0.5s;
+        }
     </style>
 </head>
 <body class="text-slate-100 min-h-screen">
 
-    <!-- Navbar Monitoring -->
+    <div id="loadingOverlay">
+        <div class="text-center">
+            <div class="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+            <p class="text-blue-400 font-bold animate-pulse uppercase tracking-widest">Sinkronisasi Data GitHub...</p>
+        </div>
+    </div>
+
+    <!-- Navbar -->
     <nav class="bg-slate-900 border-b border-slate-800 sticky top-0 z-40 shadow-2xl">
         <div class="max-w-[98%] mx-auto px-6 py-4">
             <div class="flex justify-between items-center">
                 <div class="flex items-center gap-4">
                     <div class="bg-blue-600 p-3 rounded-2xl shadow-lg shadow-blue-500/20">
-                        <i class="fas fa-desktop text-white text-xl"></i>
+                        <i class="fas fa-network-wired text-white text-xl"></i>
                     </div>
                     <div>
                         <h1 class="text-xl font-black tracking-tight text-white">LIVE PRODUCTION MONITOR</h1>
-                        <p class="text-[10px] text-blue-400 font-bold tracking-[0.3em] uppercase">Vi Printing Digital System</p>
+                        <p class="text-[10px] text-blue-400 font-bold tracking-[0.3em] uppercase">Vi Printing Cloud System</p>
                     </div>
                 </div>
                 <div class="flex items-center gap-8">
-                    <div id="pageIndicator" class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700">
+                    <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700">
                         <span class="text-[10px] font-black text-slate-400 uppercase tracking-widest">Halaman</span>
                         <p class="text-sm font-bold text-white text-center" id="pageNum">1 / 1</p>
                     </div>
@@ -65,28 +84,27 @@
     </nav>
 
     <main class="max-w-[98%] mx-auto px-6 py-6">
-        
-        <!-- Summary Stats -->
+        <!-- Stats -->
         <div class="grid grid-cols-4 gap-6 mb-8">
-            <div class="bg-slate-800/40 border border-slate-700/50 p-5 rounded-3xl backdrop-blur-md">
-                <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1 text-center">Total Order</p>
-                <h3 class="text-3xl font-black text-white text-center" id="stat-total">0</h3>
+            <div class="bg-slate-800/40 border border-slate-700/50 p-5 rounded-3xl backdrop-blur-md text-center">
+                <p class="text-[10px] font-black text-slate-500 uppercase tracking-[0.2em] mb-1">Total Order</p>
+                <h3 class="text-3xl font-black text-white" id="stat-total">0</h3>
             </div>
-            <div class="bg-blue-600/10 border border-blue-500/20 p-5 rounded-3xl backdrop-blur-md">
-                <p class="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1 text-center">Proses</p>
-                <h3 class="text-3xl font-black text-blue-400 text-center" id="stat-pending">0</h3>
+            <div class="bg-blue-600/10 border border-blue-500/20 p-5 rounded-3xl backdrop-blur-md text-center">
+                <p class="text-[10px] font-black text-blue-500 uppercase tracking-[0.2em] mb-1">Proses</p>
+                <h3 class="text-3xl font-black text-blue-400" id="stat-pending">0</h3>
             </div>
-            <div class="bg-rose-600/10 border border-rose-500/20 p-5 rounded-3xl backdrop-blur-md">
-                <p class="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-1 text-center">Prioritas</p>
-                <h3 class="text-3xl font-black text-rose-400 text-center" id="stat-priority">0</h3>
+            <div class="bg-rose-600/10 border border-rose-500/20 p-5 rounded-3xl backdrop-blur-md text-center">
+                <p class="text-[10px] font-black text-rose-500 uppercase tracking-[0.2em] mb-1">Prioritas</p>
+                <h3 class="text-3xl font-black text-rose-400" id="stat-priority">0</h3>
             </div>
-            <div class="bg-emerald-600/10 border border-emerald-500/20 p-5 rounded-3xl backdrop-blur-md">
-                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1 text-center">Selesai</p>
-                <h3 class="text-3xl font-black text-emerald-400 text-center" id="stat-completed">0</h3>
+            <div class="bg-emerald-600/10 border border-emerald-500/20 p-5 rounded-3xl backdrop-blur-md text-center">
+                <p class="text-[10px] font-black text-emerald-500 uppercase tracking-[0.2em] mb-1">Selesai</p>
+                <h3 class="text-3xl font-black text-emerald-400" id="stat-completed">0</h3>
             </div>
         </div>
 
-        <!-- Tabel Container -->
+        <!-- Tabel -->
         <div class="bg-slate-800/20 rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-700/30">
             <table class="w-full text-left border-collapse">
                 <thead>
@@ -99,68 +117,87 @@
                     </tr>
                 </thead>
             </table>
-            
             <div id="displayContainer">
                 <table class="w-full text-left border-collapse">
-                    <tbody class="divide-y divide-slate-700/30" id="orderTableBody">
-                        <!-- Data rows injected by JS -->
-                    </tbody>
+                    <tbody class="divide-y divide-slate-700/30" id="orderTableBody"></tbody>
                 </table>
             </div>
         </div>
     </main>
 
     <script>
-        // Simulasi Data Real-time
-        let allOrders = [
-            { id: "V-001", customer: "Budi Santoso", jobName: "Banner Toko Sembako", quantity: "2 Pcs", priority: "High", status: "Process", finalDeadline: "2026-03-22", statusDeadline: "2026-03-21", equipment: "Banner,Mata Ayam", checkedEquipment: "Banner" },
-            { id: "V-002", customer: "Siska Amelia", jobName: "Stiker Vinyl Matte A3", quantity: "100 Pcs", priority: "Medium", status: "Pending", finalDeadline: "2026-03-23", statusDeadline: "2026-03-22", equipment: "Vinyl,Laminasi", checkedEquipment: "" },
-            { id: "V-003", customer: "Percetakan Jaya", jobName: "Kartu Nama Art Paper", quantity: "10 Box", priority: "Low", status: "Finishing", finalDeadline: "2026-03-25", statusDeadline: "2026-03-24", equipment: "Art Paper,Box", checkedEquipment: "Art Paper,Box" },
-            { id: "V-004", customer: "Resto Padang", jobName: "Brosur Lipat 3", quantity: "500 Lembar", priority: "High", status: "Process", finalDeadline: "2026-03-22", statusDeadline: "2026-03-22", equipment: "HVS 80g", checkedEquipment: "HVS 80g" },
-            { id: "V-005", customer: "PT Maju Terus", jobName: "X-Banner Launching", quantity: "1 Set", priority: "Medium", status: "Pending", finalDeadline: "2026-03-26", statusDeadline: "2026-03-24", equipment: "X-Stand,Banner", checkedEquipment: "Banner" },
-            { id: "V-006", customer: "Digital Media", jobName: "Neon Box 1m x 1m", quantity: "1 Unit", priority: "High", status: "Process", finalDeadline: "2026-03-30", statusDeadline: "2026-03-27", equipment: "Acrylic,LED,Frame", checkedEquipment: "Frame,LED" },
-            { id: "V-010", customer: "Sekolah Dasar 01", jobName: "Sertifikat Lulus", quantity: "50 Pcs", priority: "Medium", status: "Finishing", finalDeadline: "2026-03-28", statusDeadline: "2026-03-26", equipment: "Concorde 220g", checkedEquipment: "Concorde 220g" }
-        ];
-
+        const SPREADSHEET_ID = '1bMLOB2uCREatO_2uOonwqf2YDEunJQM_UbfqmL8vVgY';
+        const CSV_URL = `https://docs.google.com/spreadsheets/d/e/2PACX-1vSa9hLZ0D_dxIG6__JPKMElhpAHD2opjifL37jOJTPj7pQjUDX2Nseg4TDlckSy89ahJvHbiBA7FV5k/pub?gid=0&single=true&output=csv`;
+        
+        let allOrders = [];
         let currentPage = 0;
-        const itemsPerPage = 6; 
+        const itemsPerPage = 6;
         let pageFlipInterval;
 
-        // Fungsi Logika Waktu Relatif
+        async function fetchData() {
+            try {
+                // Gunakan cache busting agar data selalu fresh dari GitHub/Google
+                const response = await fetch(`${CSV_URL}&cachebuster=${new Date().getTime()}`);
+                const csvText = await response.text();
+                
+                Papa.parse(csvText, {
+                    header: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        // Map CSV Headers ke Object (Pastikan Header di Sheet sama dengan nama ini)
+                        // Jika Header di sheet berbeda, ganti d['Nama Header Anda']
+                        allOrders = results.data.map(d => ({
+                            id: d['ID'] || d['id'] || '-',
+                            customer: d['Pelanggan'] || d['customer'] || 'Unknown',
+                            jobName: d['Pekerjaan'] || d['jobName'] || '-',
+                            quantity: d['QTY'] || d['quantity'] || '0',
+                            priority: d['Prioritas'] || d['priority'] || 'Low',
+                            status: d['Status'] || d['status'] || 'Pending',
+                            finalDeadline: d['Target Final'] || d['finalDeadline'] || '',
+                            statusDeadline: d['Target Tahap'] || d['statusDeadline'] || '',
+                            equipment: d['Alat'] || d['equipment'] || '',
+                            checkedEquipment: d['Ready'] || d['checkedEquipment'] || ''
+                        }));
+                        
+                        document.getElementById('loadingOverlay').style.opacity = '0';
+                        setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
+                        renderPage();
+                    }
+                });
+            } catch (error) {
+                console.error("Fetch Error:", error);
+            }
+        }
+
         function getRelativeTime(dateStr) {
-            if (!dateStr) return { text: 'TBA', color: 'text-slate-500' };
-            
+            if (!dateStr || dateStr.trim() === "") return { text: 'TBA', color: 'text-slate-500' };
             const target = new Date(dateStr);
+            if (isNaN(target.getTime())) return { text: dateStr, color: 'text-slate-300' };
+
             target.setHours(0, 0, 0, 0);
-            
             const now = new Date();
             now.setHours(0, 0, 0, 0);
-            
-            const diffTime = target - now;
-            const diffDays = Math.round(diffTime / (1000 * 60 * 60 * 24));
+            const diffDays = Math.round((target - now) / (1000 * 60 * 60 * 24));
 
             if (diffDays === 0) return { text: 'Hari Ini', color: 'text-amber-400 font-black animate-pulse' };
             if (diffDays === 1) return { text: 'Besok', color: 'text-blue-400' };
             if (diffDays > 1) return { text: `Sisa ${diffDays} Hari`, color: 'text-emerald-400' };
             if (diffDays < 0) return { text: `Telat ${Math.abs(diffDays)} Hari`, color: 'text-rose-500 font-black' };
-            
             return { text: dateStr, color: 'text-slate-300' };
         }
 
         function renderPage() {
             const tbody = document.getElementById('orderTableBody');
+            if (!allOrders.length) return;
+
             const totalPages = Math.ceil(allOrders.length / itemsPerPage);
-            
             if (currentPage >= totalPages) currentPage = 0;
 
-            const start = currentPage * itemsPerPage;
-            const end = start + itemsPerPage;
-            const pageData = allOrders.slice(start, end);
-
+            const pageData = allOrders.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
             document.getElementById('pageNum').innerText = `${currentPage + 1} / ${totalPages}`;
 
             tbody.innerHTML = '';
-            pageData.forEach((order) => {
+            pageData.forEach(order => {
                 const statusClasses = {
                     'Pending': 'bg-slate-700/40 text-slate-400 border border-slate-600/50',
                     'Process': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
@@ -175,10 +212,7 @@
                 const checkedEq = order.checkedEquipment ? order.checkedEquipment.split(',') : [];
                 const progress = allEq.length > 0 ? Math.round((checkedEq.length / allEq.length) * 100) : 0;
 
-                const targetTahap = getRelativeTime(order.statusDeadline);
-                const targetFinal = getRelativeTime(order.finalDeadline);
-
-                const row = `
+                tbody.insertAdjacentHTML('beforeend', `
                     <tr class="bg-slate-800/10 page-transition ${priorityClass}">
                         <td class="px-8 py-6">
                             <div class="flex flex-col">
@@ -188,55 +222,39 @@
                         </td>
                         <td class="px-8 py-6">
                             <span class="text-base font-semibold text-slate-200">${order.jobName}</span>
-                            <div class="flex items-center gap-3 mt-1">
-                                <span class="text-[10px] text-slate-400 font-bold uppercase tracking-widest">
-                                    QTY: ${order.quantity}
-                                </span>
-                            </div>
+                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">QTY: ${order.quantity}</p>
                         </td>
-                        <td class="px-8 py-6">
+                        <td class="px-8 py-6 text-center">
                             <div class="flex justify-center gap-6">
-                                <div class="text-center">
-                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1 tracking-widest">Target Tahap</p>
-                                    <span class="text-sm font-bold ${targetTahap.color}">${targetTahap.text}</span>
+                                <div>
+                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Tahap</p>
+                                    <span class="text-sm font-bold ${getRelativeTime(order.statusDeadline).color}">${getRelativeTime(order.statusDeadline).text}</span>
                                 </div>
                                 <div class="w-[1px] h-8 bg-slate-700/50"></div>
-                                <div class="text-center">
-                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1 tracking-widest">Target Final</p>
-                                    <span class="text-sm font-bold ${targetFinal.color}">${targetFinal.text}</span>
+                                <div>
+                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p>
+                                    <span class="text-sm font-bold ${getRelativeTime(order.finalDeadline).color}">${getRelativeTime(order.finalDeadline).text}</span>
                                 </div>
                             </div>
                         </td>
                         <td class="px-8 py-6">
                             <div class="w-full max-w-[150px]">
-                                <div class="flex justify-between text-[9px] font-black text-slate-500 mb-2 tracking-tighter">
+                                <div class="flex justify-between text-[9px] font-black text-slate-500 mb-2">
                                     <span>READY: ${checkedEq.length}/${allEq.length}</span>
                                     <span>${progress}%</span>
                                 </div>
                                 <div class="w-full bg-slate-900 h-2 rounded-full overflow-hidden border border-slate-700/50">
-                                    <div class="bg-gradient-to-r from-blue-600 to-indigo-500 h-full transition-all duration-1000" style="width: ${progress}%"></div>
+                                    <div class="bg-blue-600 h-full transition-all duration-1000" style="width: ${progress}%"></div>
                                 </div>
                             </div>
                         </td>
                         <td class="px-8 py-6 text-right">
-                            <span class="status-badge ${statusClasses[order.status] || 'bg-slate-700'}">
-                                ${order.status}
-                            </span>
+                            <span class="status-badge ${statusClasses[order.status] || 'bg-slate-700'}">${order.status}</span>
                         </td>
                     </tr>
-                `;
-                tbody.insertAdjacentHTML('beforeend', row);
+                `);
             });
-
             updateStats();
-        }
-
-        function startAutoFlip() {
-            clearInterval(pageFlipInterval);
-            pageFlipInterval = setInterval(() => {
-                currentPage++;
-                renderPage();
-            }, 10000); 
         }
 
         function updateStats() {
@@ -253,8 +271,9 @@
         }
 
         window.onload = () => {
-            renderPage();
-            startAutoFlip();
+            fetchData();
+            setInterval(fetchData, 60000); // Sinkronisasi Sheet tiap 1 menit
+            setInterval(() => { currentPage++; renderPage(); }, 10000); // Ganti halaman tiap 10 detik
             setInterval(updateClock, 1000);
             updateClock();
         };
