@@ -18,9 +18,10 @@
             font-family: 'Plus Jakarta Sans', sans-serif; 
             background-color: var(--bg-dark);
             -webkit-tap-highlight-color: transparent;
+            color: #f1f5f9;
         }
 
-        /* Desktop specific height, mobile uses auto */
+        /* Desktop specific height, mobile allows scrolling */
         @media (min-width: 1024px) {
             body { overflow: hidden; }
             #displayContainer {
@@ -54,116 +55,114 @@
             justify-content: center;
             align-items: center;
             z-index: 100;
-            transition: opacity 0.5s;
         }
 
         .checkmark-ready {
             @apply flex items-center justify-center bg-emerald-500/20 text-emerald-400 w-8 h-8 rounded-full border border-emerald-500/30;
         }
 
-        /* Custom Scrollbar for Mobile */
-        ::-webkit-scrollbar {
-            width: 4px;
+        /* Hide horizontal scroll on mobile */
+        .no-scrollbar::-webkit-scrollbar {
+            display: none;
         }
-        ::-webkit-scrollbar-track {
-            background: #1e293b;
-        }
-        ::-webkit-scrollbar-thumb {
-            background: #334155;
-            border-radius: 10px;
+        .no-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
         }
     </style>
 </head>
-<body class="text-slate-100 min-h-screen">
+<body class="min-h-screen">
 
     <div id="loadingOverlay">
         <div class="text-center px-6">
             <div class="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-            <p class="text-blue-400 text-xs font-bold animate-pulse uppercase tracking-[0.2em]">Menghubungkan ke Server...</p>
+            <p class="text-blue-400 text-xs font-bold animate-pulse uppercase tracking-[0.2em]">Menghubungkan Database...</p>
         </div>
     </div>
 
     <!-- Navbar -->
-    <nav class="bg-slate-900/80 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 shadow-xl">
-        <div class="max-w-7xl mx-auto px-4 md:px-6 py-3 md:py-4">
+    <nav class="bg-slate-900/90 backdrop-blur-md border-b border-slate-800 sticky top-0 z-40 shadow-xl">
+        <div class="max-w-7xl mx-auto px-4 md:px-6 py-3">
             <div class="flex justify-between items-center">
-                <div class="flex items-center gap-3 md:gap-4">
-                    <div class="bg-blue-600 p-2 md:p-3 rounded-xl md:rounded-2xl shadow-lg shadow-blue-500/20">
-                        <i class="fas fa-print text-white text-sm md:text-xl"></i>
+                <div class="flex items-center gap-3">
+                    <div class="bg-blue-600 p-2 rounded-xl shadow-lg">
+                        <i class="fas fa-print text-white text-sm"></i>
                     </div>
                     <div>
-                        <h1 class="text-sm md:text-xl font-black tracking-tight text-white leading-tight">VI PRODUCTION</h1>
-                        <p class="text-[8px] md:text-[10px] text-blue-400 font-bold tracking-[0.1em] md:tracking-[0.3em] uppercase">Live Monitoring</p>
+                        <h1 class="text-sm md:text-xl font-black text-white leading-tight">VI PRINTING</h1>
+                        <p class="text-[8px] md:text-[10px] text-blue-400 font-bold tracking-widest uppercase">Live Production</p>
                     </div>
                 </div>
-                <div class="flex items-center gap-4 md:gap-8">
-                    <div class="hidden sm:block bg-slate-800 px-3 py-1.5 rounded-lg border border-slate-700">
-                        <span class="text-[8px] font-black text-slate-400 uppercase tracking-widest block text-center">Page</span>
-                        <p class="text-xs font-bold text-white text-center" id="pageNum">1 / 1</p>
-                    </div>
-                    <div class="text-right">
-                        <p id="liveTime" class="text-lg md:text-2xl font-black font-mono text-white tracking-wider leading-none">00:00:00</p>
-                        <p id="liveDate" class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Memuat...</p>
-                    </div>
+                <div class="text-right">
+                    <p id="liveTime" class="text-lg md:text-2xl font-black font-mono text-white tracking-wider">00:00:00</p>
+                    <p id="liveDate" class="text-[8px] md:text-[10px] text-slate-400 font-bold uppercase tracking-widest">Memuat...</p>
                 </div>
             </div>
         </div>
     </nav>
 
-    <main class="max-w-7xl mx-auto px-4 md:px-6 py-4 md:py-6">
+    <main class="max-w-7xl mx-auto px-4 md:px-6 py-4">
         <!-- Dashboard Stats -->
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-6 mb-6 md:mb-8">
-            <div class="bg-slate-800/40 border border-slate-700/50 p-3 md:p-5 rounded-2xl md:rounded-3xl backdrop-blur-md">
-                <p class="text-[8px] md:text-[10px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">Total Order</p>
-                <h3 class="text-xl md:text-3xl font-black text-white text-center" id="stat-total">0</h3>
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+            <div class="bg-slate-800/40 border border-slate-700/50 p-3 rounded-2xl backdrop-blur-md">
+                <p class="text-[8px] font-black text-slate-500 uppercase tracking-widest mb-1 text-center">Total Order</p>
+                <h3 class="text-xl font-black text-white text-center" id="stat-total">0</h3>
             </div>
-            <div class="bg-blue-600/10 border border-blue-500/20 p-3 md:p-5 rounded-2xl md:rounded-3xl backdrop-blur-md">
-                <p class="text-[8px] md:text-[10px] font-black text-blue-500 uppercase tracking-widest mb-1 text-center">Antrean</p>
-                <h3 class="text-xl md:text-3xl font-black text-blue-400 text-center" id="stat-pending">0</h3>
+            <div class="bg-blue-600/10 border border-blue-500/20 p-3 rounded-2xl backdrop-blur-md">
+                <p class="text-[8px] font-black text-blue-500 uppercase tracking-widest mb-1 text-center">Antrean</p>
+                <h3 class="text-xl font-black text-blue-400 text-center" id="stat-pending">0</h3>
             </div>
-            <div class="bg-rose-600/10 border border-rose-500/20 p-3 md:p-5 rounded-2xl md:rounded-3xl backdrop-blur-md">
-                <p class="text-[8px] md:text-[10px] font-black text-rose-500 uppercase tracking-widest mb-1 text-center">Prioritas</p>
-                <h3 class="text-xl md:text-3xl font-black text-rose-400 text-center" id="stat-priority">0</h3>
+            <div class="bg-rose-600/10 border border-rose-500/20 p-3 rounded-2xl backdrop-blur-md">
+                <p class="text-[8px] font-black text-rose-500 uppercase tracking-widest mb-1 text-center">Prioritas</p>
+                <h3 class="text-xl font-black text-rose-400 text-center" id="stat-priority">0</h3>
             </div>
-            <div class="bg-emerald-600/10 border border-emerald-500/20 p-3 md:p-5 rounded-2xl md:rounded-3xl backdrop-blur-md">
-                <p class="text-[8px] md:text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1 text-center">Selesai</p>
-                <h3 class="text-xl md:text-3xl font-black text-emerald-400 text-center" id="stat-completed">0</h3>
-            </div>
-        </div>
-
-        <!-- Tabel Monitoring (Desktop) / Cards (Mobile) -->
-        <div class="bg-slate-800/20 rounded-2xl md:rounded-[2.5rem] shadow-2xl overflow-hidden border border-slate-700/30">
-            <!-- Header khusus Desktop -->
-            <div class="hidden lg:block">
-                <table class="w-full text-left border-collapse">
-                    <thead>
-                        <tr class="bg-slate-900/90 border-b border-slate-700/50">
-                            <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[20%]">Pelanggan</th>
-                            <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[25%]">Pekerjaan</th>
-                            <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[25%] text-center">Deadline</th>
-                            <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%]">Kesiapan</th>
-                            <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%] text-right">Status</th>
-                        </tr>
-                    </thead>
-                </table>
-            </div>
-
-            <!-- Kontainer Data Dinamis -->
-            <div id="displayContainer">
-                <!-- Desktop Table Body -->
-                <table class="hidden lg:table w-full text-left border-collapse">
-                    <tbody class="divide-y divide-slate-700/30" id="orderTableBody"></tbody>
-                </table>
-                <!-- Mobile List Body -->
-                <div id="orderMobileBody" class="lg:hidden flex flex-col divide-y divide-slate-700/50"></div>
+            <div class="bg-emerald-600/10 border border-emerald-500/20 p-3 rounded-2xl backdrop-blur-md">
+                <p class="text-[8px] font-black text-emerald-500 uppercase tracking-widest mb-1 text-center">Selesai</p>
+                <h3 class="text-xl font-black text-emerald-400 text-center" id="stat-completed">0</h3>
             </div>
         </div>
 
-        <!-- Mobile Pagination Info -->
-        <div class="lg:hidden flex justify-center mt-4">
-            <span class="bg-slate-800 px-4 py-1 rounded-full text-[10px] font-bold text-slate-400 uppercase tracking-widest border border-slate-700">
-                Halaman <span id="mobilePageNum">1 / 1</span>
-            </span>
+        <!-- Desktop Table Header (Hidden on Mobile) -->
+        <div class="hidden lg:block bg-slate-900/90 rounded-t-[2.5rem] border-x border-t border-slate-700/30 overflow-hidden">
+            <table class="w-full text-left">
+                <thead>
+                    <tr class="border-b border-slate-700/50">
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[20%]">Pelanggan</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[25%]">Pekerjaan</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[25%] text-center">Deadline</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%]">Kesiapan</th>
+                        <th class="px-8 py-5 text-[11px] font-black text-slate-500 uppercase tracking-[0.3em] w-[15%] text-right">Status</th>
+                    </tr>
+                </thead>
+            </table>
+        </div>
+
+        <!-- Main Content Area -->
+        <div id="displayContainer" class="bg-slate-800/20 rounded-2xl lg:rounded-none lg:rounded-b-[2.5rem] border border-slate-700/30 lg:border-t-0 shadow-2xl overflow-hidden">
+            <!-- Desktop Body (Paginated) -->
+            <table class="hidden lg:table w-full text-left border-collapse">
+                <tbody class="divide-y divide-slate-700/30" id="orderTableBody"></tbody>
+            </table>
+            
+            <!-- Mobile Body (Full List, Scrollable) -->
+            <div id="orderMobileBody" class="lg:hidden flex flex-col divide-y divide-slate-700/50 max-h-[70vh] overflow-y-auto no-scrollbar">
+                <!-- Data mobile akan masuk di sini -->
+            </div>
+        </div>
+
+        <!-- Footer Info Desktop Only -->
+        <div class="hidden lg:flex justify-between items-center mt-6 px-4">
+            <div class="bg-slate-800 px-4 py-2 rounded-xl border border-slate-700">
+                <p class="text-xs font-bold text-white text-center">Halaman <span id="pageNum">1 / 1</span></p>
+            </div>
+            <p class="text-[10px] text-slate-500 font-bold uppercase tracking-widest italic">Data diperbarui otomatis setiap 60 detik</p>
+        </div>
+        
+        <!-- Mobile Swipe Info -->
+        <div class="lg:hidden text-center mt-4">
+            <p class="text-[9px] text-slate-500 font-bold uppercase tracking-widest animate-bounce">
+                <i class="fas fa-chevron-down mr-2"></i> Geser ke bawah untuk melihat semua antrean
+            </p>
         </div>
     </main>
 
@@ -173,13 +172,8 @@
         let allOrdersRaw = []; 
         let activeOrders = []; 
         let currentPage = 0;
-        let itemsPerPage = 6;
+        const desktopItemsPerPage = 6;
         let initialLoad = true;
-
-        // Detect screen size to adjust items per page
-        function adjustItemsPerPage() {
-            itemsPerPage = window.innerWidth < 1024 ? 5 : 6;
-        }
 
         async function fetchData() {
             try {
@@ -208,21 +202,18 @@
                             return statusUpper !== 'COMPLETED' && statusUpper !== 'SELESAI';
                         });
                         
+                        updateStats();
+                        renderContent();
+
                         if (initialLoad) {
-                            const loader = document.getElementById('loadingOverlay');
-                            if (loader) {
-                                loader.style.opacity = '0';
-                                setTimeout(() => loader.style.display = 'none', 500);
-                            }
-                            renderPage();
+                            document.getElementById('loadingOverlay').style.opacity = '0';
+                            setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
                             initialLoad = false;
                         }
-                        
-                        updateStats();
                     }
                 });
             } catch (error) {
-                console.error("Gagal sinkronisasi database:", error);
+                console.error("Database Error:", error);
             }
         }
 
@@ -230,134 +221,116 @@
             if (!dateStr || dateStr.trim() === "") return { text: 'TBA', color: 'text-slate-500' };
             const target = new Date(dateStr);
             if (isNaN(target.getTime())) return { text: dateStr, color: 'text-slate-300' };
-
             target.setHours(0, 0, 0, 0);
             const now = new Date();
             now.setHours(0, 0, 0, 0);
             const diffDays = Math.round((target - now) / (1000 * 60 * 60 * 24));
-
-            if (diffDays === 0) return { text: 'Hari Ini', color: 'text-amber-400 font-black animate-pulse' };
+            if (diffDays === 0) return { text: 'Hari Ini', color: 'text-amber-400 font-bold' };
             if (diffDays === 1) return { text: 'Besok', color: 'text-blue-400' };
-            if (diffDays > 1) return { text: `Sisa ${diffDays} Hari`, color: 'text-emerald-400' };
+            if (diffDays > 1) return { text: `${diffDays} Hari`, color: 'text-emerald-400' };
             if (diffDays < 0) return { text: `Telat ${Math.abs(diffDays)} H`, color: 'text-rose-500 font-black' };
             return { text: dateStr, color: 'text-slate-300' };
         }
 
-        function renderPage() {
+        function renderContent() {
             const tbody = document.getElementById('orderTableBody');
             const mobileBody = document.getElementById('orderMobileBody');
-            const totalPages = Math.ceil(activeOrders.length / itemsPerPage);
-            
+            const isDesktop = window.innerWidth >= 1024;
+
+            // Handle Desktop Pagination
+            const totalPages = Math.ceil(activeOrders.length / desktopItemsPerPage);
             if (currentPage >= totalPages) currentPage = 0;
-            const pageData = activeOrders.slice(currentPage * itemsPerPage, (currentPage + 1) * itemsPerPage);
-            
-            const pageText = activeOrders.length ? `${currentPage + 1} / ${totalPages}` : "0 / 0";
-            document.getElementById('pageNum').innerText = pageText;
-            document.getElementById('mobilePageNum').innerText = pageText;
+            const desktopData = activeOrders.slice(currentPage * desktopItemsPerPage, (currentPage + 1) * desktopItemsPerPage);
+            document.getElementById('pageNum').innerText = `${currentPage + 1} / ${totalPages}`;
 
-            // Clear previous
-            tbody.innerHTML = '';
-            mobileBody.innerHTML = '';
+            // 1. Render Desktop Table (Paginated)
+            tbody.innerHTML = desktopData.length ? '' : '<tr><td colspan="5" class="py-20 text-center text-slate-500 uppercase tracking-widest">Antrean Kosong</td></tr>';
+            desktopData.forEach(order => {
+                const row = createDesktopRow(order);
+                tbody.insertAdjacentHTML('beforeend', row);
+            });
 
-            if (!activeOrders.length) {
-                const emptyMsg = `<tr><td colspan="5" class="px-8 py-24 text-center text-slate-500 font-bold uppercase tracking-[0.3em] opacity-50">Semua Target Produksi Selesai</td></tr>`;
-                const emptyMsgMobile = `<div class="px-8 py-24 text-center text-slate-500 font-bold uppercase tracking-[0.2em] opacity-50">Antrean Kosong</div>`;
-                tbody.innerHTML = emptyMsg;
-                mobileBody.innerHTML = emptyMsgMobile;
-                return;
-            }
+            // 2. Render Mobile List (Full List - Only update if changed or first time)
+            // Note: We always render full activeOrders on mobile for vertical scrolling
+            mobileBody.innerHTML = activeOrders.length ? '' : '<div class="p-10 text-center text-slate-500 uppercase tracking-widest text-xs">Semua Pekerjaan Selesai</div>';
+            activeOrders.forEach(order => {
+                mobileBody.insertAdjacentHTML('beforeend', createMobileCard(order));
+            });
+        }
 
-            pageData.forEach(order => {
-                const statusClasses = {
-                    'Pending': 'bg-slate-700/50 text-slate-400 border-slate-600/30',
-                    'Process': 'bg-blue-500/20 text-blue-400 border-blue-500/30',
-                    'Finishing': 'bg-purple-500/20 text-purple-400 border-purple-500/30'
-                };
+        function createDesktopRow(order) {
+            const statusClasses = { 'Pending': 'bg-slate-700/50 text-slate-400', 'Process': 'bg-blue-500/20 text-blue-400', 'Finishing': 'bg-purple-500/20 text-purple-400' };
+            const priorityClass = order.priority === 'High' ? 'priority-high' : order.priority === 'Medium' ? 'priority-medium' : 'priority-low';
+            const progress = calculateProgress(order);
+            const eqUI = progress === 100 ? `<div class="checkmark-ready"><i class="fas fa-check text-xs"></i></div>` : `<div class="w-24 bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700/50"><div class="bg-blue-600 h-full" style="width: ${progress}%"></div></div>`;
 
-                const priorityClass = order.priority === 'High' ? 'priority-high' : 
-                                     order.priority === 'Medium' ? 'priority-medium' : 'priority-low';
-
-                const allEq = order.equipment ? order.equipment.split(',').filter(e => e.trim() !== "") : [];
-                const checkedEq = order.checkedEquipment ? order.checkedEquipment.split(',').filter(e => e.trim() !== "") : [];
-                const progress = allEq.length > 0 ? Math.round((checkedEq.length / allEq.length) * 100) : 100;
-
-                // Equipment UI
-                const eqProgressUI = progress === 100 
-                    ? `<div class="checkmark-ready"><i class="fas fa-check text-xs"></i></div>`
-                    : `<div class="w-24 bg-slate-900 h-1.5 rounded-full overflow-hidden border border-slate-700/50">
-                        <div class="bg-blue-600 h-full" style="width: ${progress}%"></div>
-                       </div>`;
-
-                // 1. Render Desktop Table Row
-                tbody.insertAdjacentHTML('beforeend', `
-                    <tr class="bg-slate-800/10 page-transition ${priorityClass}">
-                        <td class="px-8 py-6">
-                            <div class="flex flex-col">
-                                <span class="text-[9px] font-mono text-slate-500 mb-1 tracking-widest">${order.id}</span>
-                                <span class="font-bold text-lg text-white tracking-tight">${order.customer}</span>
-                            </div>
-                        </td>
-                        <td class="px-8 py-6">
-                            <span class="text-base font-semibold text-slate-200">${order.jobName}</span>
-                            <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Qty: ${order.quantity}</p>
-                        </td>
-                        <td class="px-8 py-6 text-center">
-                            <div class="flex justify-center gap-6">
-                                <div>
-                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Tahap</p>
-                                    <span class="text-xs font-bold ${getRelativeTime(order.statusDeadline).color}">${getRelativeTime(order.statusDeadline).text}</span>
-                                </div>
-                                <div class="w-[1px] h-8 bg-slate-700/50"></div>
-                                <div>
-                                    <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p>
-                                    <span class="text-xs font-bold ${getRelativeTime(order.finalDeadline).color}">${getRelativeTime(order.finalDeadline).text}</span>
-                                </div>
-                            </div>
-                        </td>
-                        <td class="px-8 py-6">
-                            <div class="flex items-center gap-3">
-                                ${eqProgressUI}
-                                <span class="text-[10px] font-bold text-slate-500">${progress}%</span>
-                            </div>
-                        </td>
-                        <td class="px-8 py-6 text-right">
-                            <span class="status-badge ${statusClasses[order.status] || 'bg-slate-700 text-slate-400'}">${order.status}</span>
-                        </td>
-                    </tr>
-                `);
-
-                // 2. Render Mobile Card
-                mobileBody.insertAdjacentHTML('beforeend', `
-                    <div class="p-4 bg-slate-800/20 page-transition ${priorityClass}">
-                        <div class="flex justify-between items-start mb-3">
-                            <div>
-                                <p class="text-[8px] font-mono text-slate-500 tracking-widest mb-0.5">${order.id}</p>
-                                <h4 class="font-bold text-base text-white">${order.customer}</h4>
-                            </div>
-                            <span class="status-badge ${statusClasses[order.status] || 'bg-slate-700 text-slate-400'}">${order.status}</span>
+            return `
+                <tr class="bg-slate-800/10 page-transition ${priorityClass}">
+                    <td class="px-8 py-6">
+                        <div class="flex flex-col">
+                            <span class="text-[9px] font-mono text-slate-500 mb-1 tracking-widest">${order.id}</span>
+                            <span class="font-bold text-lg text-white tracking-tight">${order.customer}</span>
                         </div>
-                        
-                        <div class="mb-4">
-                            <p class="text-sm text-slate-300 font-medium">${order.jobName}</p>
-                            <p class="text-[10px] text-slate-500 font-bold uppercase mt-1">Estimasi Qty: ${order.quantity}</p>
+                    </td>
+                    <td class="px-8 py-6">
+                        <span class="text-base font-semibold text-slate-200">${order.jobName}</span>
+                        <p class="text-[10px] text-slate-400 font-bold uppercase tracking-widest mt-1">Qty: ${order.quantity}</p>
+                    </td>
+                    <td class="px-8 py-6 text-center">
+                        <div class="flex justify-center gap-6">
+                            <div><p class="text-[8px] font-black text-slate-500 uppercase mb-1">Tahap</p><span class="text-xs font-bold ${getRelativeTime(order.statusDeadline).color}">${getRelativeTime(order.statusDeadline).text}</span></div>
+                            <div class="w-[1px] h-8 bg-slate-700/50"></div>
+                            <div><p class="text-[8px] font-black text-slate-500 uppercase mb-1">Final</p><span class="text-xs font-bold ${getRelativeTime(order.finalDeadline).color}">${getRelativeTime(order.finalDeadline).text}</span></div>
                         </div>
+                    </td>
+                    <td class="px-8 py-6"><div class="flex items-center gap-3">${eqUI}<span class="text-[10px] font-bold text-slate-500">${progress}%</span></div></td>
+                    <td class="px-8 py-6 text-right"><span class="status-badge ${statusClasses[order.status] || 'bg-slate-700 text-slate-400'}">${order.status}</span></td>
+                </tr>
+            `;
+        }
 
-                        <div class="grid grid-cols-2 gap-4 bg-slate-900/40 p-3 rounded-xl border border-slate-700/30">
-                            <div>
-                                <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Deadline Final</p>
-                                <p class="text-xs font-bold ${getRelativeTime(order.finalDeadline).color}">${getRelativeTime(order.finalDeadline).text}</p>
-                            </div>
-                            <div class="flex flex-col items-end">
-                                <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Alat Ready</p>
-                                <div class="flex items-center gap-2">
-                                    <span class="text-[10px] font-bold text-slate-400">${progress}%</span>
-                                    ${eqProgressUI}
-                                </div>
+        function createMobileCard(order) {
+            const statusClasses = { 'Pending': 'bg-slate-700/50 text-slate-400', 'Process': 'bg-blue-500/20 text-blue-400', 'Finishing': 'bg-purple-500/20 text-purple-400' };
+            const priorityClass = order.priority === 'High' ? 'priority-high' : order.priority === 'Medium' ? 'priority-medium' : 'priority-low';
+            const progress = calculateProgress(order);
+            const eqUI = progress === 100 ? `<div class="checkmark-ready"><i class="fas fa-check text-[10px]"></i></div>` : `<div class="w-16 bg-slate-900 h-1 rounded-full overflow-hidden border border-slate-700/50"><div class="bg-blue-600 h-full" style="width: ${progress}%"></div></div>`;
+
+            return `
+                <div class="p-5 bg-slate-800/10 ${priorityClass} page-transition">
+                    <div class="flex justify-between items-start mb-3">
+                        <div>
+                            <span class="text-[8px] font-mono text-slate-500 tracking-widest">${order.id}</span>
+                            <h4 class="font-bold text-base text-white leading-tight">${order.customer}</h4>
+                        </div>
+                        <span class="status-badge ${statusClasses[order.status] || 'bg-slate-700'}">${order.status}</span>
+                    </div>
+                    
+                    <div class="mb-4">
+                        <p class="text-sm text-slate-300 font-semibold">${order.jobName}</p>
+                        <p class="text-[9px] text-slate-500 font-bold uppercase mt-0.5">ESTIMASI QTY: ${order.quantity}</p>
+                    </div>
+
+                    <div class="grid grid-cols-2 gap-4 bg-slate-900/40 p-3 rounded-xl border border-slate-700/20">
+                        <div>
+                            <p class="text-[8px] font-black text-slate-500 uppercase mb-0.5">Deadline Final</p>
+                            <p class="text-[11px] font-bold ${getRelativeTime(order.finalDeadline).color}">${getRelativeTime(order.finalDeadline).text}</p>
+                        </div>
+                        <div class="flex flex-col items-end">
+                            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Kesiapan Alat</p>
+                            <div class="flex items-center gap-2">
+                                <span class="text-[10px] font-bold text-slate-400">${progress}%</span>
+                                ${eqUI}
                             </div>
                         </div>
                     </div>
-                `);
-            });
+                </div>
+            `;
+        }
+
+        function calculateProgress(order) {
+            const allEq = order.equipment ? order.equipment.split(',').filter(e => e.trim() !== "") : [];
+            const checkedEq = order.checkedEquipment ? order.checkedEquipment.split(',').filter(e => e.trim() !== "") : [];
+            return allEq.length > 0 ? Math.round((checkedEq.length / allEq.length) * 100) : 100;
         }
 
         function updateStats() {
@@ -370,28 +343,27 @@
         function updateClock() {
             const now = new Date();
             document.getElementById('liveTime').innerText = now.toLocaleTimeString('id-ID', { hour12: false });
-            document.getElementById('liveDate').innerText = now.toLocaleDateString('id-ID', { weekday: 'short', day: 'numeric', month: 'short', year: 'numeric' });
+            document.getElementById('liveDate').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
         }
 
-        window.addEventListener('resize', () => {
-            adjustItemsPerPage();
-            renderPage();
-        });
+        // Window resize handler to switch rendering mode
+        window.addEventListener('resize', renderContent);
 
         window.onload = () => {
-            adjustItemsPerPage();
             fetchData();
             setInterval(fetchData, 60000); 
+            
+            // Loop pagination only for Desktop View
             setInterval(() => { 
-                const totalPages = Math.ceil(activeOrders.length / itemsPerPage);
-                if (totalPages > 1) {
-                    currentPage = (currentPage + 1) % totalPages;
-                    renderPage(); 
-                } else if (currentPage !== 0) {
-                    currentPage = 0;
-                    renderPage();
+                if (window.innerWidth >= 1024) {
+                    const totalPages = Math.ceil(activeOrders.length / desktopItemsPerPage);
+                    if (totalPages > 1) {
+                        currentPage = (currentPage + 1) % totalPages;
+                        renderContent(); 
+                    }
                 }
-            }, 8000); 
+            }, 10000); 
+
             setInterval(updateClock, 1000);
             updateClock();
         };
