@@ -39,11 +39,11 @@
         .priority-low { border-left: 4px solid #3b82f6; }
         
         .page-transition {
-            animation: slideIn 0.5s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation: slideIn 0.3s ease-out forwards;
         }
 
         @keyframes slideIn {
-            from { opacity: 0; transform: translateY(10px); }
+            from { opacity: 0; transform: translateY(5px); }
             to { opacity: 1; transform: translateY(0); }
         }
 
@@ -55,13 +55,13 @@
             justify-content: center;
             align-items: center;
             z-index: 100;
+            transition: opacity 0.5s ease;
         }
 
         .checkmark-ready {
             @apply flex items-center justify-center bg-emerald-500/20 text-emerald-400 w-8 h-8 rounded-full border border-emerald-500/30;
         }
 
-        /* Hide horizontal scroll on mobile */
         .no-scrollbar::-webkit-scrollbar {
             display: none;
         }
@@ -122,7 +122,7 @@
             </div>
         </div>
 
-        <!-- Desktop Table Header (Hidden on Mobile) -->
+        <!-- Desktop Table Header -->
         <div class="hidden lg:block bg-slate-900/90 rounded-t-[2.5rem] border-x border-t border-slate-700/30 overflow-hidden">
             <table class="w-full text-left">
                 <thead>
@@ -139,15 +139,13 @@
 
         <!-- Main Content Area -->
         <div id="displayContainer" class="bg-slate-800/20 rounded-2xl lg:rounded-none lg:rounded-b-[2.5rem] border border-slate-700/30 lg:border-t-0 shadow-2xl overflow-hidden">
-            <!-- Desktop Body (Paginated) -->
+            <!-- Desktop Body -->
             <table class="hidden lg:table w-full text-left border-collapse">
                 <tbody class="divide-y divide-slate-700/30" id="orderTableBody"></tbody>
             </table>
             
-            <!-- Mobile Body (Full List, Scrollable) -->
-            <div id="orderMobileBody" class="lg:hidden flex flex-col divide-y divide-slate-700/50 max-h-[70vh] overflow-y-auto no-scrollbar">
-                <!-- Data mobile akan masuk di sini -->
-            </div>
+            <!-- Mobile Body -->
+            <div id="orderMobileBody" class="lg:hidden flex flex-col divide-y divide-slate-700/50 max-h-[70vh] overflow-y-auto no-scrollbar"></div>
         </div>
 
         <!-- Footer Info Desktop Only -->
@@ -175,7 +173,7 @@
         const desktopItemsPerPage = 6;
         let initialLoad = true;
 
-        async function fetchData() {
+        async function fetchData(forceRenderMobile = false) {
             try {
                 const response = await fetch(`${CSV_URL}&t=${new Date().getTime()}`);
                 const csvText = await response.text();
@@ -184,7 +182,7 @@
                     header: true,
                     skipEmptyLines: true,
                     complete: function(results) {
-                        allOrdersRaw = results.data.map(d => ({
+                        const newData = results.data.map(d => ({
                             id: d['ID'] || '-',
                             customer: d['Customer'] || 'Unknown',
                             jobName: d['Job Name'] || '-',
@@ -197,17 +195,24 @@
                             checkedEquipment: d['Checked Equipment'] || ''
                         }));
 
-                        activeOrders = allOrdersRaw.filter(order => {
-                            const statusUpper = order.status.toUpperCase();
-                            return statusUpper !== 'COMPLETED' && statusUpper !== 'SELESAI';
-                        });
-                        
-                        updateStats();
-                        renderContent();
+                        // Cek apakah data benar-benar berubah untuk menghindari re-render mobile yang tidak perlu
+                        const dataChanged = JSON.stringify(newData) !== JSON.stringify(allOrdersRaw);
+
+                        if (dataChanged || forceRenderMobile || initialLoad) {
+                            allOrdersRaw = newData;
+                            activeOrders = allOrdersRaw.filter(order => {
+                                const statusUpper = order.status.toUpperCase();
+                                return statusUpper !== 'COMPLETED' && statusUpper !== 'SELESAI';
+                            });
+                            
+                            updateStats();
+                            renderContent(true); // Render ulang keduanya jika ada perubahan data
+                        }
 
                         if (initialLoad) {
-                            document.getElementById('loadingOverlay').style.opacity = '0';
-                            setTimeout(() => document.getElementById('loadingOverlay').style.display = 'none', 500);
+                            const loader = document.getElementById('loadingOverlay');
+                            loader.style.opacity = '0';
+                            setTimeout(() => loader.style.display = 'none', 500);
                             initialLoad = false;
                         }
                     }
@@ -232,29 +237,31 @@
             return { text: dateStr, color: 'text-slate-300' };
         }
 
-        function renderContent() {
+        function renderContent(updateMobile = false) {
             const tbody = document.getElementById('orderTableBody');
             const mobileBody = document.getElementById('orderMobileBody');
             const isDesktop = window.innerWidth >= 1024;
 
-            // Handle Desktop Pagination
+            // Render Desktop (Paginated) - Selalu update untuk keperluan loop halaman
             const totalPages = Math.ceil(activeOrders.length / desktopItemsPerPage);
             if (currentPage >= totalPages) currentPage = 0;
             const desktopData = activeOrders.slice(currentPage * desktopItemsPerPage, (currentPage + 1) * desktopItemsPerPage);
-            document.getElementById('pageNum').innerText = `${currentPage + 1} / ${totalPages}`;
-
-            // 1. Render Desktop Table (Paginated)
+            
+            document.getElementById('pageNum').innerText = `${currentPage + 1} / ${totalPages || 1}`;
+            
             tbody.innerHTML = desktopData.length ? '' : '<tr><td colspan="5" class="py-20 text-center text-slate-500 uppercase tracking-widest">Antrean Kosong</td></tr>';
             desktopData.forEach(order => {
-                const row = createDesktopRow(order);
-                tbody.insertAdjacentHTML('beforeend', row);
+                tbody.insertAdjacentHTML('beforeend', createDesktopRow(order));
             });
 
-            // 2. Render Mobile List (Full List)
-            mobileBody.innerHTML = activeOrders.length ? '' : '<div class="p-10 text-center text-slate-500 uppercase tracking-widest text-xs">Semua Pekerjaan Selesai</div>';
-            activeOrders.forEach(order => {
-                mobileBody.insertAdjacentHTML('beforeend', createMobileCard(order));
-            });
+            // Render Mobile (Hanya jika data berubah atau dipicu manual)
+            // Ini mencegah kartu ter-refresh saat user sedang scroll di mobile
+            if (updateMobile || !mobileBody.children.length) {
+                mobileBody.innerHTML = activeOrders.length ? '' : '<div class="p-10 text-center text-slate-500 uppercase tracking-widest text-xs">Semua Pekerjaan Selesai</div>';
+                activeOrders.forEach(order => {
+                    mobileBody.insertAdjacentHTML('beforeend', createMobileCard(order));
+                });
+            }
         }
 
         function createDesktopRow(order) {
@@ -312,7 +319,6 @@
                         <p class="text-[9px] text-slate-500 font-bold uppercase mt-0.5">ESTIMASI QTY: ${order.quantity}</p>
                     </div>
 
-                    <!-- Deadline & Info Section -->
                     <div class="space-y-3">
                         <div class="grid grid-cols-2 gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-700/20">
                             <div>
@@ -356,18 +362,21 @@
             document.getElementById('liveDate').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
         }
 
-        window.addEventListener('resize', renderContent);
+        window.addEventListener('resize', () => renderContent(true));
 
         window.onload = () => {
-            fetchData();
-            setInterval(fetchData, 60000); 
+            fetchData(true);
             
+            // Interval tarik data dari server (60 detik)
+            setInterval(() => fetchData(), 60000); 
+            
+            // Loop navigasi halaman (Hanya untuk Desktop)
             setInterval(() => { 
                 if (window.innerWidth >= 1024) {
                     const totalPages = Math.ceil(activeOrders.length / desktopItemsPerPage);
                     if (totalPages > 1) {
                         currentPage = (currentPage + 1) % totalPages;
-                        renderContent(); 
+                        renderContent(false); // Update desktop saja (parameter false agar mobile tidak refresh)
                     }
                 }
             }, 10000); 
