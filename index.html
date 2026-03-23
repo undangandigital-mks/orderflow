@@ -250,8 +250,7 @@
                 tbody.insertAdjacentHTML('beforeend', row);
             });
 
-            // 2. Render Mobile List (Full List - Only update if changed or first time)
-            // Note: We always render full activeOrders on mobile for vertical scrolling
+            // 2. Render Mobile List (Full List)
             mobileBody.innerHTML = activeOrders.length ? '' : '<div class="p-10 text-center text-slate-500 uppercase tracking-widest text-xs">Semua Pekerjaan Selesai</div>';
             activeOrders.forEach(order => {
                 mobileBody.insertAdjacentHTML('beforeend', createMobileCard(order));
@@ -295,6 +294,9 @@
             const progress = calculateProgress(order);
             const eqUI = progress === 100 ? `<div class="checkmark-ready"><i class="fas fa-check text-[10px]"></i></div>` : `<div class="w-16 bg-slate-900 h-1 rounded-full overflow-hidden border border-slate-700/50"><div class="bg-blue-600 h-full" style="width: ${progress}%"></div></div>`;
 
+            const deadlineTahap = getRelativeTime(order.statusDeadline);
+            const deadlineFinal = getRelativeTime(order.finalDeadline);
+
             return `
                 <div class="p-5 bg-slate-800/10 ${priorityClass} page-transition">
                     <div class="flex justify-between items-start mb-3">
@@ -310,14 +312,22 @@
                         <p class="text-[9px] text-slate-500 font-bold uppercase mt-0.5">ESTIMASI QTY: ${order.quantity}</p>
                     </div>
 
-                    <div class="grid grid-cols-2 gap-4 bg-slate-900/40 p-3 rounded-xl border border-slate-700/20">
-                        <div>
-                            <p class="text-[8px] font-black text-slate-500 uppercase mb-0.5">Deadline Final</p>
-                            <p class="text-[11px] font-bold ${getRelativeTime(order.finalDeadline).color}">${getRelativeTime(order.finalDeadline).text}</p>
+                    <!-- Deadline & Info Section -->
+                    <div class="space-y-3">
+                        <div class="grid grid-cols-2 gap-3 bg-slate-900/40 p-3 rounded-xl border border-slate-700/20">
+                            <div>
+                                <p class="text-[8px] font-black text-slate-500 uppercase mb-0.5">Deadline Tahap</p>
+                                <p class="text-[11px] font-bold ${deadlineTahap.color}">${deadlineTahap.text}</p>
+                            </div>
+                            <div class="text-right border-l border-slate-700/50 pl-3">
+                                <p class="text-[8px] font-black text-slate-500 uppercase mb-0.5">Deadline Final</p>
+                                <p class="text-[11px] font-bold ${deadlineFinal.color}">${deadlineFinal.text}</p>
+                            </div>
                         </div>
-                        <div class="flex flex-col items-end">
-                            <p class="text-[8px] font-black text-slate-500 uppercase mb-1">Kesiapan Alat</p>
-                            <div class="flex items-center gap-2">
+
+                        <div class="flex items-center justify-between bg-slate-900/20 p-2 rounded-lg px-3">
+                            <p class="text-[8px] font-black text-slate-500 uppercase">Kesiapan Alat</p>
+                            <div class="flex items-center gap-3">
                                 <span class="text-[10px] font-bold text-slate-400">${progress}%</span>
                                 ${eqUI}
                             </div>
@@ -346,14 +356,12 @@
             document.getElementById('liveDate').innerText = now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'short' });
         }
 
-        // Window resize handler to switch rendering mode
         window.addEventListener('resize', renderContent);
 
         window.onload = () => {
             fetchData();
             setInterval(fetchData, 60000); 
             
-            // Loop pagination only for Desktop View
             setInterval(() => { 
                 if (window.innerWidth >= 1024) {
                     const totalPages = Math.ceil(activeOrders.length / desktopItemsPerPage);
